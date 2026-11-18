@@ -1,0 +1,23 @@
+{
+  "name": "hermes-calorie-tracker",
+  "version": "1.0.0",
+  "description": "Hermes Calorie & Macro Tracker serverless worker",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:temp": "wrangler deploy --temporary",
+    "tail": "wrangler tail",
+    "types": "wrangler types",
+    "login": "wrangler login --device",
+    "login:browser": "wrangler login",
+    "login:device": "wrangler login --device",
+    "whoami": "wrangler whoami"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261113.1",
+    "typescript": "^5.7.3",
+    "wrangler": "^4.162.0"
+  }
+}

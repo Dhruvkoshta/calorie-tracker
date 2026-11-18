@@ -1,0 +1,14 @@
+{
+  "name": "calorie-tracker",
+  "label": "Calories",
+  "description": "Personal calorie tracker with daily targets, meal breakdown, nutrition estimates, and history.",
+  "icon": "Activity",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/calories",
+    "position": "after:analytics"
+  },
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}

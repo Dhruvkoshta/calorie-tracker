@@ -1,0 +1,31 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "hermes-calorie-tracker",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-01-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"observability": {
+		"enabled": true
+	},
+	"ai": { "binding": "AI" },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "hermes-calories-db",
+			"database_id": "e1964361-21b6-484e-aa25-c88c5e3c039c"
+		}
+	]
+	// Optional Cloudflare D1 binding:
+	// To bind permanent cloud D1 database:
+	// 1. Run: npx wrangler d1 create hermes-calories-db
+	// 2. Uncomment and fill the configuration below:
+	// "d1_databases": [
+	//   {
+	//     "binding": "DB",
+	//     "database_name": "hermes-calories-db",
+	//     "database_id": "<YOUR_D1_DATABASE_ID>"
+	//   }
+	// ]
+}

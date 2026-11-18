@@ -1,0 +1,30 @@
+name: calorie_tracker
+version: 1.0.0
+description: "Personal calorie tracker with chat logging, nutrition estimation, and interactive web dashboard."
+author: NousResearch
+kind: standalone
+platforms:
+  - linux
+  - macos
+  - windows
+provides_tools:
+  - calorie_log_meal
+  - calorie_get_summary
+  - calorie_get_history
+  - calorie_set_target
+  - calorie_edit_meal
+  - calorie_delete_meal
+  - calorie_export_data
+  - calorie_sync_cloudflare
+  - calorie_save_preset
+  - calorie_list_presets
+  - calorie_edit_preset
+  - calorie_delete_preset
+  - calorie_log_preset
+  - calorie_log_weight
+  - calorie_get_weight_history
+  - calorie_get_fasting_status
+  - calorie_start_fast
+  - calorie_end_fast
+  - calorie_analyze_food_photo
+
