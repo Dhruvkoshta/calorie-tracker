@@ -93,6 +93,10 @@ class LogPresetPayload(BaseModel):
     logged_at: Optional[str] = None
 
 
+def _payload_dump(payload: BaseModel) -> dict:
+    return payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+
+
 @router.get("/settings")
 def get_settings_endpoint():
     """Get current daily calorie target, macro targets, and timezone."""
@@ -114,7 +118,7 @@ def update_settings_endpoint(payload: UpdateSettingsPayload):
     """Update calorie target, macro targets, and/or timezone."""
     if not tools._is_offline():
         try:
-            data = {k: v for k, v in payload.dict().items() if v is not None}
+            data = {k: v for k, v in _payload_dump(payload).items() if v is not None}
             return tools._d1_request("/api/settings", method="PUT", data=data)
         except Exception as err:
             log.warning("D1 PUT /api/settings failed: %s. Falling back to local SQLite.", err)
@@ -260,7 +264,7 @@ def edit_meal_endpoint(meal_id: int, payload: EditMealPayload):
     """Edit an existing meal."""
     if not tools._is_offline():
         try:
-            data = {k: v for k, v in payload.dict().items() if v is not None}
+            data = {k: v for k, v in _payload_dump(payload).items() if v is not None}
             if payload.calories is not None and "calorie_source" not in data:
                 data["calorie_source"] = "user"
             return tools._d1_request(f"/api/meals/{meal_id}", method="PUT", data=data)
@@ -376,7 +380,7 @@ def create_preset_endpoint(payload: CreatePresetPayload):
     """Save a new meal/recipe preset."""
     if not tools._is_offline():
         try:
-            data = {k: v for k, v in payload.dict().items() if v is not None}
+            data = {k: v for k, v in _payload_dump(payload).items() if v is not None}
             res = tools._d1_request("/api/presets", method="POST", data=data)
             return res.get("preset", res)
         except Exception as err:
@@ -429,7 +433,7 @@ def edit_preset_endpoint(preset_id: str, payload: EditPresetPayload):
     """Edit an existing preset."""
     if not tools._is_offline():
         try:
-            data = {k: v for k, v in payload.dict().items() if v is not None}
+            data = {k: v for k, v in _payload_dump(payload).items() if v is not None}
             res = tools._d1_request(f"/api/presets/{preset_id}", method="PUT", data=data)
             return res.get("preset", res)
         except Exception as err:

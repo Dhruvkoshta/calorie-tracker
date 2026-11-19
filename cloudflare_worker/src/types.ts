@@ -2,9 +2,11 @@
  * Shared Domain Types for Calorie & Macro Tracker (CalorieFlow)
  */
 
+import type { D1Database, Ai } from "@cloudflare/workers-types";
+
 export interface Env {
-  DB?: any;
-  AI?: any;
+  DB?: D1Database;
+  AI?: Ai;
 }
 
 export interface UserSettings {
@@ -66,7 +68,7 @@ export interface FastingSession {
   start_time: string;
   target_hours: number;
   end_time: string | null;
-  is_active: number | boolean;
+  is_active: 0 | 1;
   fast_type: string;
   notes: string | null;
   created_at: string;
@@ -102,6 +104,10 @@ export interface ReferenceFoodItem {
   carbs_g: number;
   fat_g: number;
   aliases: string[];
+  displayName?: string;
+  defaultAmount?: number;
+  defaultUnit?: string;
+  notes?: string;
 }
 
 export interface FoodLookupResult {

@@ -937,3 +937,316 @@ def test_new_tools_plugin_runtime_contract():
     assert json.loads(f_raw)["status"] == "success"
 
 
+def test_format_summary_dict_contract_normalization():
+    """Test _format_summary_dict normalizes various Cloudflare Worker response formats."""
+    from plugins.calorie_tracker.tools import _format_summary_dict
+
+    # 1. Standard Cloudflare Worker response format
+    cf_standard = {
+        "local_date": "2026-11-19",
+        "daily_target": 2200,
+        "consumed": 1600,
+        "remaining": 600,
+        "over_budget": False,
+        "over_target": 0,
+        "consumed_macros": {"protein_g": 120.0, "carbs_g": 180.0, "fat_g": 50.0},
+    }
+    norm1 = _format_summary_dict(cf_standard)
+    assert norm1["date"] == "2026-11-19"
+    assert norm1["target"] == 2200
+    assert norm1["total_consumed"] == 1600
+    assert norm1["consumed"] == 1600
+    assert norm1["remaining"] == 600
+    assert norm1["over_target"] == 0
+    assert norm1["over_budget"] is False
+    assert norm1["consumed_macros"]["protein_g"] == 120.0
+
+    # 2. Worker response with missing remaining (should be derived from daily_target - consumed)
+    cf_missing_remaining = {
+        "local_date": "2026-11-19",
+        "daily_target": 2000,
+        "consumed": 1400,
+    }
+    norm2 = _format_summary_dict(cf_missing_remaining)
+    assert norm2["date"] == "2026-11-19"
+    assert norm2["target"] == 2000
+    assert norm2["total_consumed"] == 1400
+    assert norm2["remaining"] == 600
+    assert norm2["over_target"] == 0
+    assert norm2["over_budget"] is False
+
+    # 3. Worker response with over_budget=True and missing remaining & over_target
+    cf_over_budget = {
+        "local_date": "2026-11-19",
+        "daily_target": 2000,
+        "consumed": 2450,
+        "over_budget": True,
+    }
+    norm3 = _format_summary_dict(cf_over_budget)
+    assert norm3["date"] == "2026-11-19"
+    assert norm3["target"] == 2000
+    assert norm3["total_consumed"] == 2450
+    assert norm3["remaining"] == 0
+    assert norm3["over_target"] == 450
+    assert norm3["over_budget"] is True
+
+    # 4. Local SQLite / legacy format with date & target instead of local_date & daily_target
+    local_summary = {
+        "date": "2026-11-18",
+        "target": 1800,
+        "consumed": 1950,
+        "remaining": 0,
+        "over_target": 150,
+    }
+    norm4 = _format_summary_dict(local_summary)
+    assert norm4["date"] == "2026-11-18"
+    assert norm4["target"] == 1800
+    assert norm4["total_consumed"] == 1950
+    assert norm4["remaining"] == 0
+    assert norm4["over_target"] == 150
+    assert norm4["over_budget"] is True
+
+    # 5. Untargeted day (target is None)
+    untargeted = {
+        "local_date": "2026-11-19",
+        "consumed": 420,
+    }
+    norm5 = _format_summary_dict(untargeted)
+    assert norm5["date"] == "2026-11-19"
+    assert norm5["target"] is None
+    assert norm5["total_consumed"] == 420
+    assert norm5["remaining"] is None
+    assert norm5["over_target"] == 0
+    assert norm5["over_budget"] is False
+    assert norm5["consumed_macros"] == {"protein_g": 0.0, "carbs_g": 0.0, "fat_g": 0.0}
+
+
+def test_dashboard_api_d1_proxying_online(monkeypatch):
+    """Test Cloudflare D1 proxying behavior in hermes_plugin/dashboard/plugin_api.py when online."""
+    app = FastAPI()
+    app.include_router(dashboard_router, prefix="/api/plugins/calorie-tracker")
+    client = TestClient(app)
+
+    # Disable offline mode
+    monkeypatch.setattr(tools, "_is_offline", lambda: False)
+
+    mock_d1_calls = []
+
+    def fake_d1_request(path, method="GET", data=None, timeout=10.0):
+        mock_d1_calls.append({"path": path, "method": method, "data": data})
+        if path == "/api/settings" and method == "GET":
+            return {
+                "daily_calorie_target": 2300,
+                "timezone": "Europe/Paris",
+                "target_protein_g": 160.0,
+                "target_carbs_g": 210.0,
+                "target_fat_g": 70.0,
+            }
+        elif path == "/api/settings" and method == "PUT":
+            return {
+                "daily_calorie_target": data.get("daily_calorie_target", 2300),
+                "timezone": data.get("timezone", "Europe/Paris"),
+            }
+        elif path.startswith("/api/summary"):
+            return {
+                "local_date": "2026-11-19",
+                "daily_target": 2300,
+                "consumed": 850,
+                "remaining": 1450,
+                "over_budget": False,
+                "over_target": 0,
+            }
+        elif path.startswith("/api/meals") and method == "GET":
+            return [
+                {
+                    "id": 88,
+                    "food_name": "Croissant",
+                    "amount": 1,
+                    "unit": "piece",
+                    "calories": 260,
+                    "local_date": "2026-11-19",
+                }
+            ]
+        elif path == "/api/meals" and method == "POST":
+            return {
+                "id": 89,
+                "food_name": data.get("food_name"),
+                "calories": data.get("calories"),
+                "local_date": "2026-11-19",
+            }
+        elif path.startswith("/api/presets") and method == "GET":
+            return {
+                "presets": [
+                    {"id": "p1", "name": "Espresso", "calories": 5}
+                ]
+            }
+        return {}
+
+    monkeypatch.setattr(tools, "_d1_request", fake_d1_request)
+
+    # 1. GET /settings proxied to D1
+    resp_settings = client.get("/api/plugins/calorie-tracker/settings")
+    assert resp_settings.status_code == 200
+    assert resp_settings.json()["daily_calorie_target"] == 2300
+    assert resp_settings.json()["timezone"] == "Europe/Paris"
+    assert any(c["path"] == "/api/settings" and c["method"] == "GET" for c in mock_d1_calls)
+
+    # 2. PUT /settings proxied to D1
+    resp_put_settings = client.put(
+        "/api/plugins/calorie-tracker/settings",
+        json={"daily_calorie_target": 2400, "timezone": "Europe/London"},
+    )
+    assert resp_put_settings.status_code == 200
+    assert resp_put_settings.json()["daily_calorie_target"] == 2400
+    assert any(c["path"] == "/api/settings" and c["method"] == "PUT" for c in mock_d1_calls)
+
+    # 3. GET /summary proxied to D1 and normalized (date and target aliases)
+    resp_summary = client.get("/api/plugins/calorie-tracker/summary?date=2026-11-19")
+    assert resp_summary.status_code == 200
+    sum_data = resp_summary.json()
+    assert sum_data["date"] == "2026-11-19"
+    assert sum_data["target"] == 2300
+    assert sum_data["consumed"] == 850
+    assert sum_data["remaining"] == 1450
+
+    # 4. GET /meals proxied to D1
+    resp_meals = client.get("/api/plugins/calorie-tracker/meals?date=2026-11-19")
+    assert resp_meals.status_code == 200
+    meals_data = resp_meals.json()
+    assert meals_data["date"] == "2026-11-19"
+    assert len(meals_data["meals"]) == 1
+    assert meals_data["meals"][0]["food_name"] == "Croissant"
+
+    # 5. POST /meals proxied to D1
+    resp_create_meal = client.post(
+        "/api/plugins/calorie-tracker/meals",
+        json={
+            "food_name": "Latte",
+            "amount": 1,
+            "unit": "cup",
+            "calories": 150,
+            "protein_g": 8.0,
+            "carbs_g": 12.0,
+            "fat_g": 6.0,
+        },
+    )
+    assert resp_create_meal.status_code == 200
+    assert resp_create_meal.json()["id"] == 89
+    assert resp_create_meal.json()["food_name"] == "Latte"
+
+    # 6. GET /presets proxied to D1
+    resp_presets = client.get("/api/plugins/calorie-tracker/presets")
+    assert resp_presets.status_code == 200
+    assert any(p["name"] == "Espresso" for p in resp_presets.json())
+
+
+def test_dashboard_api_d1_proxying_offline_fallback(monkeypatch):
+    """Test Cloudflare D1 proxying fallback to local SQLite when offline or on network failure."""
+    app = FastAPI()
+    app.include_router(dashboard_router, prefix="/api/plugins/calorie-tracker")
+    client = TestClient(app)
+
+    # Populate local SQLite with baseline data
+    conn = storage.get_connection()
+    storage.update_settings(
+        conn,
+        daily_calorie_target=1900,
+        tz_name="America/Chicago",
+        target_protein_g=130.0,
+    )
+    meal = storage.log_meal(
+        conn,
+        food_name="Offline Oatmeal",
+        amount=1,
+        unit="bowl",
+        calories=300,
+        protein_g=10.0,
+        carbs_g=50.0,
+        fat_g=5.0,
+        calorie_source="user",
+        meal_type="breakfast",
+        logged_at="2026-11-19T08:00:00Z",
+    )
+    conn.close()
+
+    # --- Scenario A: Explicit offline mode (HERMES_CALORIE_OFFLINE = "1") ---
+    monkeypatch.setattr(tools, "_is_offline", lambda: True)
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("D1 network request should not be called in offline mode!")
+
+    monkeypatch.setattr(tools, "_d1_request", fail_if_called)
+
+    # Verify GET /settings hits local SQLite
+    res_set = client.get("/api/plugins/calorie-tracker/settings")
+    assert res_set.status_code == 200
+    assert res_set.json()["daily_calorie_target"] == 1900
+    assert res_set.json()["timezone"] == "America/Chicago"
+
+    # Verify GET /summary hits local SQLite
+    res_sum = client.get("/api/plugins/calorie-tracker/summary?date=2026-11-19")
+    assert res_sum.status_code == 200
+    assert res_sum.json()["consumed"] == 300
+    assert res_sum.json()["remaining"] == 1600
+
+    # Verify GET /meals hits local SQLite
+    res_meals = client.get("/api/plugins/calorie-tracker/meals?date=2026-11-19")
+    assert res_meals.status_code == 200
+    assert len(res_meals.json()["meals"]) >= 1
+    assert res_meals.json()["meals"][0]["food_name"] == "Offline Oatmeal"
+
+    # --- Scenario B: Online mode but D1 network failure (transparent fallback) ---
+    monkeypatch.setattr(tools, "_is_offline", lambda: False)
+
+    def network_error(*args, **kwargs):
+        raise RuntimeError("Cloudflare Edge connection timed out (504 Gateway Timeout)")
+
+    monkeypatch.setattr(tools, "_d1_request", network_error)
+
+    # 1. GET /settings catches error and falls back to local SQLite
+    res_err_set = client.get("/api/plugins/calorie-tracker/settings")
+    assert res_err_set.status_code == 200
+    assert res_err_set.json()["daily_calorie_target"] == 1900
+
+    # 2. PUT /settings updates local SQLite upon D1 network failure
+    res_err_put = client.put(
+        "/api/plugins/calorie-tracker/settings",
+        json={"daily_calorie_target": 2100},
+    )
+    assert res_err_put.status_code == 200
+    assert res_err_put.json()["daily_calorie_target"] == 2100
+
+    # 3. GET /summary falls back to local SQLite
+    res_err_sum = client.get("/api/plugins/calorie-tracker/summary?date=2026-11-19")
+    assert res_err_sum.status_code == 200
+    assert res_err_sum.json()["target"] == 2100
+
+    # 4. POST /meals logs meal to local SQLite upon D1 network failure
+    res_err_meal = client.post(
+        "/api/plugins/calorie-tracker/meals",
+        json={
+            "food_name": "Fallback Apple",
+            "amount": 1,
+            "unit": "medium",
+            "calories": 95,
+        },
+    )
+    assert res_err_meal.status_code == 200
+    created = res_err_meal.json()
+    assert created["food_name"] == "Fallback Apple"
+    assert created["calories"] == 95
+
+    # Confirm created meal is in local SQLite
+    conn = storage.get_connection()
+    persisted = storage.get_meal(conn, created["id"])
+    assert persisted is not None
+    assert persisted["food_name"] == "Fallback Apple"
+    conn.close()
+
+    # 5. GET /presets falls back to local SQLite
+    res_err_presets = client.get("/api/plugins/calorie-tracker/presets")
+    assert res_err_presets.status_code == 200
+    assert any(p["name"] == "Coffee" for p in res_err_presets.json())
+
+
+

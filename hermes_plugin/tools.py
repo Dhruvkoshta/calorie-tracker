@@ -542,19 +542,24 @@ def _d1_request(
 def _format_summary_dict(summary: dict[str, Any]) -> dict[str, Any]:
     """Normalize summary dictionary fields across Cloudflare Worker and local SQLite."""
     target = summary.get("daily_target") if "daily_target" in summary else summary.get("target")
-    consumed = summary.get("consumed", 0)
+    consumed = summary.get("consumed") if "consumed" in summary else summary.get("total_consumed", 0)
     remaining = summary.get("remaining")
     if remaining is None and target is not None:
         remaining = max(0, target - consumed)
     over_target = summary.get("over_target")
     if over_target is None and target is not None:
         over_target = max(0, consumed - target)
+    over_budget = summary.get("over_budget")
+    if over_budget is None:
+        over_budget = bool(over_target and over_target > 0)
     return {
         "date": summary.get("local_date") or summary.get("date"),
         "target": target,
         "total_consumed": consumed,
+        "consumed": consumed,
         "remaining": remaining,
         "over_target": over_target or 0,
+        "over_budget": over_budget,
         "consumed_macros": summary.get("consumed_macros", {"protein_g": 0.0, "carbs_g": 0.0, "fat_g": 0.0}),
     }
 
@@ -588,8 +593,8 @@ def handle_calorie_log_meal(args: dict[str, Any]) -> ToolResult:
                 ref_res = _d1_request(f"/api/reference-food?name={encoded_name}&amount={amount}&unit={encoded_unit}")
                 if ref_res.get("found"):
                     ref_food = ref_res
-            except Exception:
-                pass
+            except Exception as err:
+                log.warning("Cloudflare D1 request failed in handle_calorie_log_meal: %s. Falling back to local storage.", err)
 
         if ref_food is None:
             ref_food = storage.lookup_reference_food(food_name, amount, unit)
@@ -851,8 +856,8 @@ def handle_calorie_export_data(args: dict[str, Any]) -> ToolResult:
             else:
                 data = _d1_request("/api/export?format=json")
             return _result({"status": "success", "format": fmt, "content": data})
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_export_data: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -975,8 +980,8 @@ def handle_calorie_save_preset(args: dict[str, Any]) -> ToolResult:
                 "message": f"Saved preset '{preset['name']}' ({preset['calories']} kcal).",
                 "preset": preset,
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_save_preset: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1018,8 +1023,8 @@ def handle_calorie_list_presets(args: dict[str, Any]) -> ToolResult:
                 "count": len(presets),
                 "presets": presets,
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_list_presets: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1048,8 +1053,8 @@ def handle_calorie_edit_preset(args: dict[str, Any]) -> ToolResult:
                 "message": f"Updated preset '{updated.get('name', preset_ident)}'.",
                 "preset": updated,
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_edit_preset: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1098,8 +1103,8 @@ def handle_calorie_delete_preset(args: dict[str, Any]) -> ToolResult:
                 "deleted": True,
                 "message": f"Deleted preset '{preset_ident}'.",
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_delete_preset: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1202,8 +1207,8 @@ def handle_calorie_log_weight(args: dict[str, Any]) -> ToolResult:
                 "entry": res.get("entry"),
                 "stats": res.get("stats"),
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_log_weight: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1231,8 +1236,8 @@ def handle_calorie_get_weight_history(args: dict[str, Any]) -> ToolResult:
                 "logs": res.get("logs", []),
                 "stats": res.get("stats", {}),
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_get_weight_history: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1263,8 +1268,8 @@ def handle_calorie_get_fasting_status(args: dict[str, Any]) -> ToolResult:
                 "status": "success",
                 "fasting": res,
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_get_fasting_status: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1346,8 +1351,8 @@ def handle_calorie_start_fast(args: dict[str, Any]) -> ToolResult:
                 "message": f"Started {fast_type} fast ({target_hours}h goal).",
                 "session": res.get("session"),
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_start_fast: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1379,8 +1384,8 @@ def handle_calorie_end_fast(args: dict[str, Any]) -> ToolResult:
                 "message": "Fasting window ended.",
                 "session": res.get("session"),
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_end_fast: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1411,8 +1416,8 @@ def handle_calorie_analyze_food_photo(args: dict[str, Any]) -> ToolResult:
                 payload["notes"] = notes
             res = _d1_request("/api/analyze-food-photo", method="POST", data=payload)
             return _result(res)
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_analyze_food_photo: %s. Falling back to local storage.", err)
 
     # Fallback offline reference estimation
     ref = storage.lookup_reference_food(food_desc, 1.0, "serving")

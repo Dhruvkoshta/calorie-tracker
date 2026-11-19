@@ -21,8 +21,14 @@ import type {
   FastingSession,
   DailySummary,
 } from "./types";
-import { lookupReferenceFood } from "./referenceFoods";
+import {
+  lookupReferenceFood,
+  findReferenceFood,
+  estimateNutritionFromText,
+  REFERENCE_FOODS,
+} from "./referenceFoods";
 export type { Env };
+export { estimateNutritionFromText };
 
 // In-memory state fallback when D1 is not bound or initializing
 let inMemSettings: UserSettings = {
@@ -561,54 +567,7 @@ async function d1GetLatestMeal(db: any): Promise<Meal | null> {
   }
 }
 
-// Intelligent Heuristic Nutrition Estimator
-function estimateNutritionFromText(text: string) {
-  const lower = text.toLowerCase();
-  
-  if (lower.includes("chicken") || lower.includes("breast")) {
-    return { food_name: "Grilled Chicken Breast", amount: 200, unit: "g", calories: 330, protein_g: 62.0, carbs_g: 0.0, fat_g: 7.2, notes: "Lean poultry source high in protein.", confidence: 0.90 };
-  }
-  if (lower.includes("paneer")) {
-    return { food_name: "Paneer Dish", amount: 150, unit: "g", calories: 395, protein_g: 27.5, carbs_g: 5.2, fat_g: 30.0, notes: "Fresh cottage cheese, rich in protein and healthy fats.", confidence: 0.88 };
-  }
-  if (lower.includes("egg") || lower.includes("omelette")) {
-    return { food_name: "Eggs / Omelette", amount: 2, unit: "large", calories: 180, protein_g: 13.0, carbs_g: 1.5, fat_g: 12.0, notes: "Whole eggs with complete amino acid profile.", confidence: 0.92 };
-  }
-  if (lower.includes("rice")) {
-    return { food_name: "Cooked Rice Bowl", amount: 1, unit: "bowl", calories: 240, protein_g: 4.8, carbs_g: 52.0, fat_g: 0.6, notes: "Complex carbohydrates energy source.", confidence: 0.89 };
-  }
-  if (lower.includes("oat") || lower.includes("oatmeal")) {
-    return { food_name: "Rolled Oatmeal", amount: 1, unit: "bowl", calories: 310, protein_g: 11.0, carbs_g: 54.0, fat_g: 5.0, notes: "High fiber beta-glucan oats.", confidence: 0.90 };
-  }
-  if (lower.includes("salmon") || lower.includes("fish")) {
-    return { food_name: "Grilled Salmon Fillet", amount: 150, unit: "g", calories: 310, protein_g: 30.0, carbs_g: 0.0, fat_g: 20.0, notes: "Rich in Omega-3 fatty acids.", confidence: 0.91 };
-  }
-  if (lower.includes("coffee")) {
-    return { food_name: "Coffee", amount: 1, unit: "cup", calories: 97, protein_g: 1.7, carbs_g: 20.5, fat_g: 1.0, notes: "Brewed coffee with milk and sugar.", confidence: 0.95 };
-  }
-  if (lower.includes("banana")) {
-    return { food_name: "Banana", amount: 1, unit: "medium", calories: 105, protein_g: 1.3, carbs_g: 27.0, fat_g: 0.3, notes: "Potassium and energy-rich fruit.", confidence: 0.95 };
-  }
-  if (lower.includes("salad")) {
-    return { food_name: "Garden Greens Salad", amount: 1, unit: "bowl", calories: 160, protein_g: 5.0, carbs_g: 12.0, fat_g: 10.0, notes: "Fresh vegetable salad with dressing.", confidence: 0.85 };
-  }
-  if (lower.includes("smoothie") || lower.includes("shake")) {
-    return { food_name: "Protein Shake / Smoothie", amount: 1, unit: "glass", calories: 280, protein_g: 32.0, carbs_g: 25.0, fat_g: 4.0, notes: "High protein nutrient shake.", confidence: 0.88 };
-  }
-  
-  // Generic balanced meal fallback
-  return {
-    food_name: text.length > 3 ? text.trim().slice(0, 40) : "Mixed Meal",
-    amount: 1,
-    unit: "serving",
-    calories: 380,
-    protein_g: 24.0,
-    carbs_g: 42.0,
-    fat_g: 14.0,
-    notes: "Estimated macro composition based on typical balanced meal proportions.",
-    confidence: 0.75,
-  };
-}
+
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
