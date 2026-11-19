@@ -27,6 +27,7 @@ import {
   estimateNutritionFromText,
   REFERENCE_FOODS,
 } from "./referenceFoods";
+import { COMPILED_CSS } from "./styles";
 export type { Env };
 export { estimateNutritionFromText };
 
@@ -996,7 +997,7 @@ Return STRICTLY valid JSON with no markdown wrapping and NO other text, matching
         if (elapsedHours >= 18) {
           stage = { name: "Deep Ketosis", desc: "Peak metabolic flexibility & autophagy", color: "rose", range: "18h+" };
         } else if (elapsedHours >= 16) {
-          stage = { name: "Cellular Autophagy", desc: "Cellular cleansing & recycling of damaged proteins", color: "purple", range: "16 - 18h" };
+          stage = { name: "Cellular Autophagy", desc: "Cellular cleansing & recycling of damaged proteins", color: "teal", range: "16 - 18h" };
         } else if (elapsedHours >= 12) {
           stage = { name: "Fat Burning & Ketosis", desc: "Lipolysis active, body burning stored fat", color: "amber", range: "12 - 16h" };
         }
@@ -1029,7 +1030,7 @@ Return STRICTLY valid JSON with no markdown wrapping and NO other text, matching
           if (elapsedHours >= 18) {
             stage = { name: "Deep Ketosis", desc: "Peak metabolic flexibility", color: "rose", range: "18h+" };
           } else if (elapsedHours >= 16) {
-            stage = { name: "Cellular Autophagy", desc: "Autophagy & repair in progress", color: "purple", range: "16 - 18h" };
+            stage = { name: "Cellular Autophagy", desc: "Autophagy & repair in progress", color: "teal", range: "16 - 18h" };
           } else if (elapsedHours >= 12) {
             stage = { name: "Fat Burning & Ketosis", desc: "Lipolysis active, burning stored fat", color: "amber", range: "12 - 16h" };
           }
@@ -1104,7 +1105,7 @@ const INDEX_HTML = `<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Hermes Calorie & Nutrition</title>
   
   <!-- PWA Meta -->
@@ -1118,33 +1119,9 @@ const INDEX_HTML = `<!DOCTYPE html>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            canvas: '#090A0F',
-            card: '#12141C',
-            elevated: '#181B26',
-            input: '#1D212E',
-            roseAccent: '#F43F5E',
-            skyAccent: '#38BDF8',
-            emeraldAccent: '#34D399',
-            amberAccent: '#FBBF24',
-            purpleAccent: '#A855F7',
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
+    \${COMPILED_CSS}
     :root {
       --bg-canvas: #090A0F;
       --bg-card: #12141C;
@@ -1157,9 +1134,13 @@ const INDEX_HTML = `<!DOCTYPE html>
     body {
       background-color: var(--bg-canvas);
       color: #F1F5F9;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
+      text-wrap: pretty;
+    }
+    h1, h2, h3, h4 {
+      text-wrap: balance;
     }
     .tabular-num {
       font-variant-numeric: tabular-nums;
@@ -1195,6 +1176,15 @@ const INDEX_HTML = `<!DOCTYPE html>
       box-shadow: 0 0 16px #38BDF8, 0 0 28px #34D399;
       animation: laserScan 2s infinite ease-in-out;
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .laser-line { display: none !important; }
+    }
   </style>
 </head>
 <body class="min-h-screen pb-28 selection:bg-rose-500/30 selection:text-white">
@@ -1203,11 +1193,11 @@ const INDEX_HTML = `<!DOCTYPE html>
   <div class="fixed inset-x-0 top-0 h-96 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.06),transparent_70%)] pointer-events-none z-0"></div>
 
   <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <div id="toast-container" class="fixed bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
 
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-white/[0.06] bg-[#090A0F]/85 backdrop-blur-xl">
-    <div class="max-w-xl mx-auto px-4 h-16 flex items-center justify-between gap-2 relative z-10">
+    <div class="max-w-2xl md:max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-2 relative z-10">
       
       <!-- Brand & Sync Status Pill -->
       <div class="flex items-center gap-2.5">
@@ -1216,8 +1206,8 @@ const INDEX_HTML = `<!DOCTYPE html>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-sm font-extrabold tracking-tight text-white">Calorie<span class="text-rose-400">Flow</span></span>
-            <button id="btn-sync-pill" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] hover:border-emerald-500/30 transition active:scale-95" title="Click to refresh / sync">
+            <h1 class="text-sm font-extrabold tracking-tight text-white">Calorie<span class="text-rose-400">Flow</span></h1>
+            <button id="btn-sync-pill" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] hover:border-emerald-500/30 transition active:scale-95" title="Click to refresh / sync" aria-label="Sync with Hermes Agent">
               <span class="relative flex h-1.5 w-1.5">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -1239,171 +1229,173 @@ const INDEX_HTML = `<!DOCTYPE html>
 
         <!-- Date Switcher -->
         <div id="date-switcher-wrap" class="flex items-center bg-[#12141C] border border-white/[0.07] rounded-xl p-0.5 shadow-inner">
-          <button id="btn-prev-day" class="p-1.5 text-slate-400 hover:text-white rounded-lg transition" title="Previous Day">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          <button id="btn-prev-day" class="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 text-slate-400 hover:text-white rounded-lg transition" title="Previous Day" aria-label="Previous day">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
           <div class="relative px-2 flex items-center">
             <span id="date-display-label" class="text-xs font-semibold text-slate-200 cursor-pointer select-none tabular-num">Today</span>
             <input type="date" id="date-input" class="absolute inset-0 opacity-0 cursor-pointer w-full">
           </div>
-          <button id="btn-next-day" class="p-1.5 text-slate-400 hover:text-white rounded-lg transition" title="Next Day">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <button id="btn-next-day" class="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 text-slate-400 hover:text-white rounded-lg transition" title="Next Day" aria-label="Next day">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
 
         <!-- Settings Gear -->
-        <button id="btn-open-settings" class="p-2 text-slate-400 hover:text-white bg-[#12141C] border border-white/[0.07] rounded-xl transition hover:border-white/20 active:scale-95" title="Settings & Goals">
+        <button id="btn-open-settings" class="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 text-slate-400 hover:text-white bg-[#12141C] border border-white/[0.07] rounded-xl transition hover:border-white/20 active:scale-95" title="Settings & Goals" aria-label="Settings and Goals">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </button>
       </div>
     </div>
 
     <!-- Segmented Navigation Tabs -->
-    <div class="max-w-xl mx-auto px-4 pb-2">
-      <nav class="grid grid-cols-4 gap-1 p-1 bg-[#12141C] border border-white/[0.07] rounded-xl text-xs font-semibold shadow-inner">
-        <button id="tab-intake" class="tab-btn py-1.5 rounded-lg text-white bg-white/[0.08] transition flex items-center justify-center gap-1.5 shadow-sm" data-tab="intake">
-          <span>🍽️</span>
-          <span class="hidden sm:inline">Intake</span>
+    <div class="max-w-2xl md:max-w-4xl mx-auto px-4 pb-2">
+      <nav role="tablist" aria-label="Sections" class="grid grid-cols-4 gap-1 p-1 bg-[#12141C] border border-white/[0.07] rounded-xl text-xs font-semibold shadow-inner">
+        <button id="tab-intake" role="tab" aria-selected="true" aria-controls="view-intake" class="tab-btn min-h-[44px] py-2 rounded-lg text-white bg-white/[0.08] transition flex items-center justify-center gap-1.5 shadow-sm" data-tab="intake">
+          <span aria-hidden="true">🍽️</span>
+          <span class="inline">Intake</span>
         </button>
-        <button id="tab-photo" class="tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5" data-tab="photo">
-          <span>📸</span>
-          <span class="hidden sm:inline">Photo AI</span>
+        <button id="tab-photo" role="tab" aria-selected="false" aria-controls="view-photo" class="tab-btn min-h-[44px] py-2 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5" data-tab="photo">
+          <span aria-hidden="true">📸</span>
+          <span class="inline">Photo AI</span>
         </button>
-        <button id="tab-fasting" class="tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5" data-tab="fasting">
-          <span>⏳</span>
-          <span class="hidden sm:inline">Fasting</span>
+        <button id="tab-fasting" role="tab" aria-selected="false" aria-controls="view-fasting" class="tab-btn min-h-[44px] py-2 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5" data-tab="fasting">
+          <span aria-hidden="true">⏳</span>
+          <span class="inline">Fasting</span>
         </button>
-        <button id="tab-weight" class="tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5" data-tab="weight">
-          <span>⚖️</span>
-          <span class="hidden sm:inline">Weight</span>
+        <button id="tab-weight" role="tab" aria-selected="false" aria-controls="view-weight" class="tab-btn min-h-[44px] py-2 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5" data-tab="weight">
+          <span aria-hidden="true">⚖️</span>
+          <span class="inline">Weight</span>
         </button>
       </nav>
     </div>
   </header>
 
   <!-- Main Container -->
-  <main class="max-w-xl mx-auto px-4 pt-4 relative z-10">
+  <main class="max-w-2xl md:max-w-4xl mx-auto px-4 pt-4 relative z-10">
 
     <!-- ======================================================== -->
     <!-- TAB 1: INTAKE & MACROS                                  -->
     <!-- ======================================================== -->
-    <div id="view-intake" class="space-y-4">
+    <div id="view-intake" role="tabpanel" aria-labelledby="tab-intake" class="space-y-4">
       
-      <!-- Energy Balance Radial Hero Card -->
-      <section class="surface-card rounded-2xl p-5 relative overflow-hidden">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Energy Balance</span>
-            <span id="target-pill-display" class="px-2 py-0.5 rounded-full text-[11px] font-mono bg-white/[0.04] text-slate-300 border border-white/[0.06]">Target: 2,000 kcal</span>
-          </div>
-          <span id="budget-status-pill" class="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span id="budget-status-text">On Track</span>
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between gap-4">
-          <!-- Circular Ring Gauge -->
-          <div class="relative w-36 h-36 flex-shrink-0 flex items-center justify-center">
-            <svg class="w-36 h-36 -rotate-90 transform" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.06)" stroke-width="10" fill="none"/>
-              <circle id="calorie-gauge-circle" cx="60" cy="60" r="50" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" fill="none" stroke-dasharray="314" stroke-dashoffset="314" class="transition-all duration-700 ease-out"/>
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span id="hero-remaining-val" class="text-2xl font-black tracking-tight text-white tabular-num">--</span>
-              <span id="hero-remaining-lbl" class="text-[9px] uppercase tracking-wider font-bold text-slate-400">Remaining</span>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Energy Balance Radial Hero Card -->
+        <section class="surface-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Energy Balance</span>
+              <span id="target-pill-display" class="px-2 py-0.5 rounded-full text-[11px] font-mono bg-white/[0.04] text-slate-300 border border-white/[0.06]">Target: 2,000 kcal</span>
             </div>
+            <span id="budget-status-pill" class="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span id="budget-status-text">On Track</span>
+            </span>
           </div>
 
-          <!-- Right Column Breakdown -->
-          <div class="flex-1 space-y-3">
-            <div class="flex items-baseline justify-between border-b border-white/[0.06] pb-2">
-              <span class="text-xs font-semibold text-slate-400">Eaten</span>
-              <div class="text-right">
-                <span id="hero-eaten-val" class="text-lg font-bold text-slate-100 tabular-num">0</span>
-                <span class="text-[10px] text-slate-400">kcal</span>
+          <div class="flex items-center justify-between gap-4">
+            <!-- Circular Ring Gauge -->
+            <div class="relative w-36 h-36 flex-shrink-0 flex items-center justify-center">
+              <svg class="w-36 h-36 -rotate-90 transform" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.06)" stroke-width="10" fill="none"/>
+                <circle id="calorie-gauge-circle" cx="60" cy="60" r="50" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" fill="none" stroke-dasharray="314" stroke-dashoffset="314" class="transition-all duration-700 ease-out"/>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span id="hero-remaining-val" class="text-2xl font-black tracking-tight text-white tabular-num">--</span>
+                <span id="hero-remaining-lbl" class="text-[9px] uppercase tracking-wider font-bold text-slate-400">Remaining</span>
               </div>
             </div>
-            <div class="flex items-baseline justify-between border-b border-white/[0.06] pb-2">
-              <span class="text-xs font-semibold text-slate-400">Budget</span>
-              <div class="text-right">
-                <span id="hero-budget-val" class="text-lg font-bold text-slate-100 tabular-num">2,000</span>
-                <span class="text-[10px] text-slate-400">kcal</span>
+
+            <!-- Right Column Breakdown -->
+            <div class="flex-1 space-y-3">
+              <div class="flex items-baseline justify-between border-b border-white/[0.06] pb-2">
+                <span class="text-xs font-semibold text-slate-400">Eaten</span>
+                <div class="text-right">
+                  <span id="hero-eaten-val" class="text-lg font-bold text-slate-100 tabular-num">0</span>
+                  <span class="text-[10px] text-slate-400">kcal</span>
+                </div>
+              </div>
+              <div class="flex items-baseline justify-between border-b border-white/[0.06] pb-2">
+                <span class="text-xs font-semibold text-slate-400">Budget</span>
+                <div class="text-right">
+                  <span id="hero-budget-val" class="text-lg font-bold text-slate-100 tabular-num">2,000</span>
+                  <span class="text-[10px] text-slate-400">kcal</span>
+                </div>
+              </div>
+              <div class="pt-1">
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span id="hero-pct-val">0% consumed</span>
+                  <span id="hero-over-badge" class="hidden text-rose-400 font-semibold">Over Budget</span>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div id="hero-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-rose-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
               </div>
             </div>
-            <div class="pt-1">
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span id="hero-pct-val">0% consumed</span>
-                <span id="hero-over-badge" class="hidden text-rose-400 font-semibold">Over Budget</span>
+          </div>
+        </section>
+
+        <!-- Macronutrients Split Card -->
+        <section class="surface-card rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Macronutrients Split</span>
+            <span id="macro-pct-ratio" class="text-[10px] font-mono text-slate-400">P: 0% • C: 0% • F: 0%</span>
+          </div>
+
+          <div class="space-y-3">
+            <!-- Protein Bar -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span class="flex items-center gap-1.5 text-sky-400">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>Protein
+                </span>
+                <span class="tabular-num text-slate-200"><span id="macro-p-consumed">0</span> / <span id="macro-p-target">140</span>g</span>
               </div>
-              <div class="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                <div id="hero-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-rose-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+              <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                <div id="macro-p-bar" class="h-full bg-sky-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                <span id="macro-p-left">140g left</span>
+                <span id="macro-p-pct">0%</span>
+              </div>
+            </div>
+
+            <!-- Carbs Bar -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span class="flex items-center gap-1.5 text-amber-400">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>Carbs
+                </span>
+                <span class="tabular-num text-slate-200"><span id="macro-c-consumed">0</span> / <span id="macro-c-target">200</span>g</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                <div id="macro-c-bar" class="h-full bg-amber-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                <span id="macro-c-left">200g left</span>
+                <span id="macro-c-pct">0%</span>
+              </div>
+            </div>
+
+            <!-- Fat Bar -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span class="flex items-center gap-1.5 text-rose-400">
+                  <span class="w-2 h-2 rounded-full bg-rose-400"></span>Fat
+                </span>
+                <span class="tabular-num text-slate-200"><span id="macro-f-consumed">0</span> / <span id="macro-f-target">65</span>g</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                <div id="macro-f-bar" class="h-full bg-rose-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                <span id="macro-f-left">65g left</span>
+                <span id="macro-f-pct">0%</span>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- Macronutrients Split Card -->
-      <section class="surface-card rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Macronutrients Split</span>
-          <span id="macro-pct-ratio" class="text-[10px] font-mono text-slate-400">P: 0% • C: 0% • F: 0%</span>
-        </div>
-
-        <div class="space-y-3">
-          <!-- Protein Bar -->
-          <div>
-            <div class="flex justify-between text-xs font-semibold mb-1">
-              <span class="flex items-center gap-1.5 text-sky-400">
-                <span class="w-2 h-2 rounded-full bg-sky-400"></span>Protein
-              </span>
-              <span class="tabular-num text-slate-200"><span id="macro-p-consumed">0</span> / <span id="macro-p-target">140</span>g</span>
-            </div>
-            <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
-              <div id="macro-p-bar" class="h-full bg-sky-400 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-              <span id="macro-p-left">140g left</span>
-              <span id="macro-p-pct">0%</span>
-            </div>
-          </div>
-
-          <!-- Carbs Bar -->
-          <div>
-            <div class="flex justify-between text-xs font-semibold mb-1">
-              <span class="flex items-center gap-1.5 text-amber-400">
-                <span class="w-2 h-2 rounded-full bg-amber-400"></span>Carbs
-              </span>
-              <span class="tabular-num text-slate-200"><span id="macro-c-consumed">0</span> / <span id="macro-c-target">200</span>g</span>
-            </div>
-            <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
-              <div id="macro-c-bar" class="h-full bg-amber-400 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-              <span id="macro-c-left">200g left</span>
-              <span id="macro-c-pct">0%</span>
-            </div>
-          </div>
-
-          <!-- Fat Bar -->
-          <div>
-            <div class="flex justify-between text-xs font-semibold mb-1">
-              <span class="flex items-center gap-1.5 text-rose-400">
-                <span class="w-2 h-2 rounded-full bg-rose-400"></span>Fat
-              </span>
-              <span class="tabular-num text-slate-200"><span id="macro-f-consumed">0</span> / <span id="macro-f-target">65</span>g</span>
-            </div>
-            <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
-              <div id="macro-f-bar" class="h-full bg-rose-400 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-              <span id="macro-f-left">65g left</span>
-              <span id="macro-f-pct">0%</span>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <!-- One-Tap Staples & Quick Log Presets Carousel -->
       <section class="space-y-2">
@@ -1436,7 +1428,7 @@ const INDEX_HTML = `<!DOCTYPE html>
     <!-- ======================================================== -->
     <!-- TAB 2: PHOTO TO MACROS AI                               -->
     <!-- ======================================================== -->
-    <div id="view-photo" class="hidden space-y-4">
+    <div id="view-photo" role="tabpanel" aria-labelledby="tab-photo" class="hidden space-y-4">
       
       <section class="surface-card rounded-2xl p-5 relative overflow-hidden">
         <div class="flex items-center justify-between mb-2">
@@ -1565,7 +1557,7 @@ const INDEX_HTML = `<!DOCTYPE html>
     <!-- ======================================================== -->
     <!-- TAB 3: INTERMITTENT FASTING WINDOW                      -->
     <!-- ======================================================== -->
-    <div id="view-fasting" class="hidden space-y-4">
+    <div id="view-fasting" role="tabpanel" aria-labelledby="tab-fasting" class="hidden space-y-4">
       
       <!-- Fasting Hero Ring & Timer -->
       <section class="surface-card rounded-2xl p-6 text-center relative overflow-hidden">
@@ -1573,8 +1565,8 @@ const INDEX_HTML = `<!DOCTYPE html>
         <!-- Status Pill -->
         <div class="flex items-center justify-between mb-4">
           <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Intermittent Fasting</span>
-          <span id="fasting-state-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+          <span id="fasting-state-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-500/15 text-teal-300 border border-teal-500/30 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
             <span id="fasting-state-text">Fasting</span>
           </span>
         </div>
@@ -1583,7 +1575,7 @@ const INDEX_HTML = `<!DOCTYPE html>
         <div class="relative w-44 h-44 mx-auto my-2 flex items-center justify-center">
           <svg class="w-44 h-44 -rotate-90 transform" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="none"/>
-            <circle id="fasting-gauge-circle" cx="60" cy="60" r="50" stroke="#A855F7" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="314" stroke-dashoffset="314" class="transition-all duration-700 ease-out"/>
+            <circle id="fasting-gauge-circle" cx="60" cy="60" r="50" stroke="#14B8A6" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="314" stroke-dashoffset="314" class="transition-all duration-700 ease-out"/>
           </svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <span id="fasting-timer-countdown" class="text-2xl font-black font-mono tracking-tight text-white tabular-num">00:00:00</span>
@@ -1599,16 +1591,16 @@ const INDEX_HTML = `<!DOCTYPE html>
           </div>
           <div class="surface-elevated p-3 rounded-xl">
             <span class="text-[10px] font-semibold text-slate-400">Remaining</span>
-            <p id="fasting-remaining-display" class="text-sm font-bold text-purple-300 mt-0.5">--</p>
+            <p id="fasting-remaining-display" class="text-sm font-bold text-teal-300 mt-0.5">--</p>
           </div>
         </div>
 
         <!-- Fasting Controls -->
         <div class="flex gap-2 mt-4">
-          <button id="btn-toggle-fast" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold shadow-lg shadow-purple-500/20 active:scale-95 transition">
+          <button id="btn-toggle-fast" class="flex-1 py-3 px-4 min-h-[44px] rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white text-xs font-bold shadow-lg shadow-sky-500/20 active:scale-95 transition flex items-center justify-center">
             Start Fast
           </button>
-          <button id="btn-edit-fast-time" class="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] text-xs font-semibold text-slate-300 transition active:scale-95">
+          <button id="btn-edit-fast-time" class="px-4 py-3 min-h-[44px] rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] text-xs font-semibold text-slate-300 transition active:scale-95 flex items-center justify-center">
             Adjust Start
           </button>
         </div>
@@ -1618,19 +1610,19 @@ const INDEX_HTML = `<!DOCTYPE html>
       <section class="surface-card rounded-2xl p-5 space-y-3">
         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fasting Protocols</span>
         <div class="grid grid-cols-4 gap-2">
-          <button class="fasting-preset-btn py-2 px-1 rounded-xl surface-elevated text-center hover:border-purple-500/40 transition active:scale-95" data-hours="14" data-type="14:10">
+          <button class="fasting-preset-btn min-h-[44px] py-2 px-1 rounded-xl surface-elevated text-center hover:border-sky-500/40 transition active:scale-95" data-hours="14" data-type="14:10">
             <span class="block text-xs font-black text-white">14:10</span>
             <span class="block text-[9px] text-slate-400">Gentle</span>
           </button>
-          <button class="fasting-preset-btn py-2 px-1 rounded-xl surface-elevated border-purple-500/50 bg-purple-500/10 text-center hover:border-purple-500/40 transition active:scale-95" data-hours="16" data-type="16:8">
+          <button class="fasting-preset-btn min-h-[44px] py-2 px-1 rounded-xl surface-elevated border-sky-500/50 bg-sky-500/10 text-center hover:border-sky-500/40 transition active:scale-95" data-hours="16" data-type="16:8">
             <span class="block text-xs font-black text-white">16:8</span>
-            <span class="block text-[9px] text-purple-300">Classic</span>
+            <span class="block text-[9px] text-sky-300">Classic</span>
           </button>
-          <button class="fasting-preset-btn py-2 px-1 rounded-xl surface-elevated text-center hover:border-purple-500/40 transition active:scale-95" data-hours="18" data-type="18:6">
+          <button class="fasting-preset-btn min-h-[44px] py-2 px-1 rounded-xl surface-elevated text-center hover:border-sky-500/40 transition active:scale-95" data-hours="18" data-type="18:6">
             <span class="block text-xs font-black text-white">18:6</span>
             <span class="block text-[9px] text-slate-400">Focused</span>
           </button>
-          <button class="fasting-preset-btn py-2 px-1 rounded-xl surface-elevated text-center hover:border-purple-500/40 transition active:scale-95" data-hours="20" data-type="20:4">
+          <button class="fasting-preset-btn min-h-[44px] py-2 px-1 rounded-xl surface-elevated text-center hover:border-sky-500/40 transition active:scale-95" data-hours="20" data-type="20:4">
             <span class="block text-xs font-black text-white">20:4</span>
             <span class="block text-[9px] text-slate-400">Warrior</span>
           </button>
@@ -1641,33 +1633,45 @@ const INDEX_HTML = `<!DOCTYPE html>
       <section class="surface-card rounded-2xl p-5 space-y-3">
         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Metabolic Milestones</span>
         <div class="space-y-2 text-xs">
-          <div id="milestone-1" class="surface-elevated p-3 rounded-xl flex items-center justify-between border-l-4 border-sky-400">
-            <div>
-              <span class="font-bold text-white">0–12 Hours: Blood Sugar Stabilization</span>
-              <p class="text-[11px] text-slate-400 mt-0.5">Insulin falls, glycogen depletes, liver energy reset</p>
+          <div id="milestone-1" class="surface-elevated p-3.5 rounded-xl flex items-center justify-between border border-sky-500/25 bg-sky-500/[0.04]">
+            <div class="flex items-start gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-sky-400 mt-1 flex-shrink-0"></span>
+              <div>
+                <span class="font-bold text-white">0–12 Hours: Blood Sugar Stabilization</span>
+                <p class="text-[11px] text-slate-400 mt-0.5">Insulin falls, glycogen depletes, liver energy reset</p>
+              </div>
             </div>
-            <span class="text-sky-400 font-mono text-[10px]">Glycogen</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">Glycogen</span>
           </div>
-          <div id="milestone-2" class="surface-elevated p-3 rounded-xl flex items-center justify-between border-l-4 border-amber-400">
-            <div>
-              <span class="font-bold text-white">12–16 Hours: Fat Burning & Ketosis</span>
-              <p class="text-[11px] text-slate-400 mt-0.5">Lipolysis accelerates, burning stored adipose tissue</p>
+          <div id="milestone-2" class="surface-elevated p-3.5 rounded-xl flex items-center justify-between border border-amber-500/25 bg-amber-500/[0.04]">
+            <div class="flex items-start gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400 mt-1 flex-shrink-0"></span>
+              <div>
+                <span class="font-bold text-white">12–16 Hours: Fat Burning & Ketosis</span>
+                <p class="text-[11px] text-slate-400 mt-0.5">Lipolysis accelerates, burning stored adipose tissue</p>
+              </div>
             </div>
-            <span class="text-amber-400 font-mono text-[10px]">Fat Burn</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">Fat Burn</span>
           </div>
-          <div id="milestone-3" class="surface-elevated p-3 rounded-xl flex items-center justify-between border-l-4 border-purple-400">
-            <div>
-              <span class="font-bold text-white">16–18 Hours: Cellular Autophagy</span>
-              <p class="text-[11px] text-slate-400 mt-0.5">Cells recycle damaged organelles and proteins</p>
+          <div id="milestone-3" class="surface-elevated p-3.5 rounded-xl flex items-center justify-between border border-teal-500/25 bg-teal-500/[0.04]">
+            <div class="flex items-start gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-teal-400 mt-1 flex-shrink-0"></span>
+              <div>
+                <span class="font-bold text-white">16–18 Hours: Cellular Autophagy</span>
+                <p class="text-[11px] text-slate-400 mt-0.5">Cells recycle damaged organelles and proteins</p>
+              </div>
             </div>
-            <span class="text-purple-400 font-mono text-[10px]">Autophagy</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-teal-500/15 text-teal-400 border border-teal-500/30">Autophagy</span>
           </div>
-          <div id="milestone-4" class="surface-elevated p-3 rounded-xl flex items-center justify-between border-l-4 border-rose-400">
-            <div>
-              <span class="font-bold text-white">18+ Hours: Deep Ketosis & HGH</span>
-              <p class="text-[11px] text-slate-400 mt-0.5">Elevated growth hormone, profound cellular renewal</p>
+          <div id="milestone-4" class="surface-elevated p-3.5 rounded-xl flex items-center justify-between border border-rose-500/25 bg-rose-500/[0.04]">
+            <div class="flex items-start gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-rose-400 mt-1 flex-shrink-0"></span>
+              <div>
+                <span class="font-bold text-white">18+ Hours: Deep Ketosis & HGH</span>
+                <p class="text-[11px] text-slate-400 mt-0.5">Elevated growth hormone, profound cellular renewal</p>
+              </div>
             </div>
-            <span class="text-rose-400 font-mono text-[10px]">Deep Ketosis</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">Deep Ketosis</span>
           </div>
         </div>
       </section>
@@ -1676,7 +1680,7 @@ const INDEX_HTML = `<!DOCTYPE html>
     <!-- ======================================================== -->
     <!-- TAB 4: WEIGHT PROGRESSION                               -->
     <!-- ======================================================== -->
-    <div id="view-weight" class="hidden space-y-4">
+    <div id="view-weight" role="tabpanel" aria-labelledby="tab-weight" class="hidden space-y-4">
       
       <!-- Key Weight Stats Card -->
       <section class="surface-card rounded-2xl p-5">
@@ -1743,29 +1747,29 @@ const INDEX_HTML = `<!DOCTYPE html>
   <!-- ======================================================== -->
 
   <!-- Add / Edit Meal Modal -->
-  <div id="meal-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="meal-modal" role="dialog" aria-modal="true" aria-labelledby="meal-modal-title" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="surface-card rounded-2xl w-full max-w-md p-5 space-y-4 animate-pop">
       <div class="flex items-center justify-between">
         <h3 id="meal-modal-title" class="text-sm font-bold text-white">Log Meal</h3>
-        <button id="btn-close-meal-modal" class="text-slate-400 hover:text-white text-lg font-bold">×</button>
+        <button id="btn-close-meal-modal" aria-label="Close meal dialog" class="text-slate-400 hover:text-white text-lg font-bold">×</button>
       </div>
       <form id="form-meal" class="space-y-3">
         <input type="hidden" id="meal-edit-id">
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Food Name</label>
+          <label for="meal-food-name" class="text-[11px] font-semibold text-slate-400">Food Name</label>
           <input type="text" id="meal-food-name" required placeholder="e.g. Scrambled Eggs with Toast" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none focus:border-rose-500">
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="text-[11px] font-semibold text-slate-400">Amount</label>
+            <label for="meal-amount" class="text-[11px] font-semibold text-slate-400">Amount</label>
             <input type="number" id="meal-amount" step="0.1" value="1" required class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-slate-400">Unit</label>
+            <label for="meal-unit" class="text-[11px] font-semibold text-slate-400">Unit</label>
             <input type="text" id="meal-unit" value="serving" required class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-slate-400">Meal Type</label>
+            <label for="meal-type" class="text-[11px] font-semibold text-slate-400">Meal Type</label>
             <select id="meal-type" class="w-full mt-1 px-2.5 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
@@ -1775,25 +1779,25 @@ const INDEX_HTML = `<!DOCTYPE html>
           </div>
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Calories (kcal)</label>
+          <label for="meal-calories" class="text-[11px] font-semibold text-slate-400">Calories (kcal)</label>
           <input type="number" id="meal-calories" required placeholder="e.g. 350" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="text-[11px] font-semibold text-sky-400">Protein (g)</label>
+            <label for="meal-protein" class="text-[11px] font-semibold text-sky-400">Protein (g)</label>
             <input type="number" id="meal-protein" step="0.1" placeholder="0" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-amber-400">Carbs (g)</label>
+            <label for="meal-carbs" class="text-[11px] font-semibold text-amber-400">Carbs (g)</label>
             <input type="number" id="meal-carbs" step="0.1" placeholder="0" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-rose-400">Fat (g)</label>
+            <label for="meal-fat" class="text-[11px] font-semibold text-rose-400">Fat (g)</label>
             <input type="number" id="meal-fat" step="0.1" placeholder="0" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Notes / Ingredients</label>
+          <label for="meal-notes" class="text-[11px] font-semibold text-slate-400">Notes / Ingredients</label>
           <input type="text" id="meal-notes" placeholder="Optional notes" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
         </div>
         <div class="flex gap-2 pt-2">
@@ -1805,23 +1809,23 @@ const INDEX_HTML = `<!DOCTYPE html>
   </div>
 
   <!-- Log Weight Modal -->
-  <div id="weight-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="weight-modal" role="dialog" aria-modal="true" aria-labelledby="weight-modal-title" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="surface-card rounded-2xl w-full max-w-sm p-5 space-y-4 animate-pop">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-bold text-white">Record Body Weight</h3>
-        <button id="btn-close-weight-modal" class="text-slate-400 hover:text-white text-lg font-bold">×</button>
+        <h3 id="weight-modal-title" class="text-sm font-bold text-white">Record Body Weight</h3>
+        <button id="btn-close-weight-modal" aria-label="Close weight dialog" class="text-slate-400 hover:text-white text-lg font-bold">×</button>
       </div>
       <form id="form-weight" class="space-y-3">
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Weight (kg)</label>
+          <label for="input-weight-kg" class="text-[11px] font-semibold text-slate-400">Weight (kg)</label>
           <input type="number" id="input-weight-kg" step="0.1" required placeholder="e.g. 74.5" class="w-full mt-1 px-3 py-2 text-sm font-bold rounded-xl surface-elevated text-white focus:outline-none focus:border-emerald-500">
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Date</label>
+          <label for="input-weight-date" class="text-[11px] font-semibold text-slate-400">Date</label>
           <input type="date" id="input-weight-date" required class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Notes</label>
+          <label for="input-weight-notes" class="text-[11px] font-semibold text-slate-400">Notes</label>
           <input type="text" id="input-weight-notes" placeholder="e.g. Morning fasted" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
         </div>
         <div class="flex gap-2 pt-2">
@@ -1833,43 +1837,43 @@ const INDEX_HTML = `<!DOCTYPE html>
   </div>
 
   <!-- Settings & Targets Modal -->
-  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="surface-card rounded-2xl w-full max-w-md p-5 space-y-4 animate-pop">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-bold text-white">Tracker Settings & Goals</h3>
-        <button id="btn-close-settings" class="text-slate-400 hover:text-white text-lg font-bold">×</button>
+        <h3 id="settings-modal-title" class="text-sm font-bold text-white">Tracker Settings & Goals</h3>
+        <button id="btn-close-settings" aria-label="Close settings dialog" class="text-slate-400 hover:text-white text-lg font-bold">×</button>
       </div>
       <form id="form-settings" class="space-y-3">
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Daily Calorie Target (kcal)</label>
+          <label for="setting-target" class="text-[11px] font-semibold text-slate-400">Daily Calorie Target (kcal)</label>
           <input type="number" id="setting-target" value="2000" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="text-[11px] font-semibold text-sky-400">Protein (g)</label>
+            <label for="setting-protein" class="text-[11px] font-semibold text-sky-400">Protein (g)</label>
             <input type="number" id="setting-protein" value="140" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-amber-400">Carbs (g)</label>
+            <label for="setting-carbs" class="text-[11px] font-semibold text-amber-400">Carbs (g)</label>
             <input type="number" id="setting-carbs" value="200" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-rose-400">Fat (g)</label>
+            <label for="setting-fat" class="text-[11px] font-semibold text-rose-400">Fat (g)</label>
             <input type="number" id="setting-fat" value="65" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-[11px] font-semibold text-slate-400">Goal Weight (kg)</label>
+            <label for="setting-weight-goal" class="text-[11px] font-semibold text-slate-400">Goal Weight (kg)</label>
             <input type="number" id="setting-weight-goal" step="0.1" placeholder="e.g. 70.0" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-purple-400">Fasting Goal (hours)</label>
+            <label for="setting-fasting-target" class="text-[11px] font-semibold text-teal-400">Fasting Goal (hours)</label>
             <input type="number" id="setting-fasting-target" step="1" value="16" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
           </div>
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400">Timezone</label>
+          <label for="setting-tz" class="text-[11px] font-semibold text-slate-400">Timezone</label>
           <input type="text" id="setting-tz" value="UTC" class="w-full mt-1 px-3 py-2 text-xs rounded-xl surface-elevated text-white focus:outline-none">
         </div>
         <div class="flex gap-2 pt-2">
@@ -1881,13 +1885,13 @@ const INDEX_HTML = `<!DOCTYPE html>
   </div>
 
   <!-- PWA iOS Instructions Modal -->
-  <div id="pwa-ios-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="pwa-ios-modal" role="dialog" aria-modal="true" aria-labelledby="pwa-ios-title" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="surface-card rounded-2xl w-full max-w-sm p-5 space-y-4 animate-pop text-center">
       <div class="w-12 h-12 mx-auto rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-2xl">
         📲
       </div>
       <div>
-        <h3 class="text-base font-bold text-white">Install on iPhone / iPad</h3>
+        <h3 id="pwa-ios-title" class="text-base font-bold text-white">Install on iPhone / iPad</h3>
         <p class="text-xs text-slate-400 mt-1">To install CalorieFlow as a standalone native app on your home screen:</p>
       </div>
       <div class="surface-elevated p-3 rounded-xl text-xs text-left space-y-2 text-slate-300">
@@ -1970,7 +1974,9 @@ const INDEX_HTML = `<!DOCTYPE html>
     function switchTab(tab) {
       activeTab = tab;
       tabBtns.forEach(b => {
-        if (b.dataset.tab === tab) {
+        const isSel = b.dataset.tab === tab;
+        b.setAttribute("aria-selected", isSel ? "true" : "false");
+        if (isSel) {
           b.className = "tab-btn py-1.5 rounded-lg text-white bg-white/[0.08] transition flex items-center justify-center gap-1.5 shadow-sm";
         } else {
           b.className = "tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5";
@@ -2135,7 +2141,7 @@ const INDEX_HTML = `<!DOCTYPE html>
               <span class="text-sm font-black text-white tabular-num">\${m.calories}</span>
               <span class="text-[10px] text-slate-400">kcal</span>
             </div>
-            <button class="btn-del-meal p-1.5 text-slate-500 hover:text-rose-400 transition" data-id="\${m.id}">
+            <button class="btn-del-meal min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-slate-500 hover:text-rose-400 transition" data-id="\${m.id}" aria-label="Delete meal \${m.food_name}">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
@@ -2219,11 +2225,32 @@ const INDEX_HTML = `<!DOCTYPE html>
     function handlePhotoFile(file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        currentPhotoBase64 = e.target.result;
-        previewImg.src = currentPhotoBase64;
-        emptyState.classList.add("hidden");
-        previewState.classList.remove("hidden");
-        analyzeCurrentPhoto();
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1024;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          currentPhotoBase64 = canvas.toDataURL("image/jpeg", 0.85);
+          previewImg.src = currentPhotoBase64;
+          emptyState.classList.add("hidden");
+          previewState.classList.remove("hidden");
+          analyzeCurrentPhoto();
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -2343,27 +2370,31 @@ const INDEX_HTML = `<!DOCTYPE html>
       const toggleBtn = document.getElementById("btn-toggle-fast");
 
       if (isActive) {
-        stateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1.5";
+        stateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-500/15 text-teal-300 border border-teal-500/30 flex items-center gap-1.5";
         stateText.innerText = "Fasting Active";
         toggleBtn.innerText = "End Fast";
-        toggleBtn.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-xs font-bold transition";
+        toggleBtn.className = "flex-1 py-3 px-4 min-h-[44px] rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-xs font-bold transition flex items-center justify-center";
       } else if (autoTracked) {
         stateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1.5";
         stateText.innerText = "Auto-Fasting (Last Meal)";
         toggleBtn.innerText = "Start Manual Fast";
-        toggleBtn.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold transition";
+        toggleBtn.className = "flex-1 py-3 px-4 min-h-[44px] rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white text-xs font-bold transition flex items-center justify-center";
       } else {
         stateBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5";
         stateText.innerText = "Eating Window Open";
         toggleBtn.innerText = "Start Fast";
-        toggleBtn.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold transition";
+        toggleBtn.className = "flex-1 py-3 px-4 min-h-[44px] rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white text-xs font-bold transition flex items-center justify-center";
       }
 
       document.getElementById("fasting-target-display").innerText = (fastingData.target_hours || 16) + " Hours (" + (fastingData.fast_type || "16:8") + ")";
       updateFastingTimer();
 
       if (!fastingInterval) {
-        fastingInterval = setInterval(updateFastingTimer, 1000);
+        fastingInterval = setInterval(() => {
+          if (activeTab === "fasting" && document.visibilityState === "visible") {
+            updateFastingTimer();
+          }
+        }, 1000);
       }
     }
 
@@ -2390,7 +2421,7 @@ const INDEX_HTML = `<!DOCTYPE html>
       const circle = document.getElementById("fasting-gauge-circle");
       const circum = 2 * Math.PI * 50; // 314
       circle.style.strokeDashoffset = circum - (pct / 100) * circum;
-      circle.style.stroke = pct >= 100 ? "#34D399" : "#A855F7";
+      circle.style.stroke = pct >= 100 ? "#34D399" : "#14B8A6";
     }
 
     document.getElementById("btn-toggle-fast").onclick = async () => {
@@ -2549,7 +2580,7 @@ const INDEX_HTML = `<!DOCTYPE html>
           </div>
           <div class="flex items-center gap-3">
             <span class="text-sm font-black text-white tabular-num">\${w.weight_kg} kg</span>
-            <button class="btn-del-weight text-slate-500 hover:text-rose-400 transition" data-id="\${w.id}">
+            <button class="btn-del-weight min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-slate-500 hover:text-rose-400 transition" data-id="\${w.id}" aria-label="Delete weight record from \${w.date}">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
@@ -2691,6 +2722,15 @@ const INDEX_HTML = `<!DOCTYPE html>
         setTimeout(() => toast.remove(), 300);
       }, 2500);
     }
+
+    // Escape key closes modals
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        document.querySelectorAll('[role="dialog"]:not(.hidden)').forEach(modal => {
+          modal.classList.add("hidden");
+        });
+      }
+    });
 
     // Init
     updateDateLabel();

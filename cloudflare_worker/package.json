@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
+    "build:css": "tailwindcss -i input.css -o dist.css --minify",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "deploy:temp": "wrangler deploy --temporary",
@@ -19,6 +20,8 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261113.1",
+    "@tailwindcss/cli": "^4.3.5",
+    "tailwindcss": "^4.3.5",
     "typescript": "^5.7.3",
     "wrangler": "^4.162.0"
   }
