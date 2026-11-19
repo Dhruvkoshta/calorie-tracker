@@ -13,12 +13,15 @@ Tools:
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any, Optional
 import urllib.parse
 import urllib.request
 
 from plugins.calorie_tracker import storage
+
+log = logging.getLogger(__name__)
 
 CALORIE_LOG_MEAL_SCHEMA = {
     "type": "object",
@@ -536,6 +539,26 @@ def _d1_request(
         return json.loads(resp.read().decode("utf-8"))
 
 
+def _format_summary_dict(summary: dict[str, Any]) -> dict[str, Any]:
+    """Normalize summary dictionary fields across Cloudflare Worker and local SQLite."""
+    target = summary.get("daily_target") if "daily_target" in summary else summary.get("target")
+    consumed = summary.get("consumed", 0)
+    remaining = summary.get("remaining")
+    if remaining is None and target is not None:
+        remaining = max(0, target - consumed)
+    over_target = summary.get("over_target")
+    if over_target is None and target is not None:
+        over_target = max(0, consumed - target)
+    return {
+        "date": summary.get("local_date") or summary.get("date"),
+        "target": target,
+        "total_consumed": consumed,
+        "remaining": remaining,
+        "over_target": over_target or 0,
+        "consumed_macros": summary.get("consumed_macros", {"protein_g": 0.0, "carbs_g": 0.0, "fat_g": 0.0}),
+    }
+
+
 def handle_calorie_log_meal(args: dict[str, Any]) -> ToolResult:
     """Handler for calorie_log_meal tool."""
     food_name = args.get("food_name", "").strip()
@@ -557,7 +580,20 @@ def handle_calorie_log_meal(args: dict[str, Any]) -> ToolResult:
         cals = int(user_cals)
         source = "estimate" if is_estimated else "user"
     else:
-        ref_food = storage.lookup_reference_food(food_name, amount, unit)
+        ref_food = None
+        if not _is_offline():
+            try:
+                encoded_name = urllib.parse.quote(food_name)
+                encoded_unit = urllib.parse.quote(unit)
+                ref_res = _d1_request(f"/api/reference-food?name={encoded_name}&amount={amount}&unit={encoded_unit}")
+                if ref_res.get("found"):
+                    ref_food = ref_res
+            except Exception:
+                pass
+
+        if ref_food is None:
+            ref_food = storage.lookup_reference_food(food_name, amount, unit)
+
         if ref_food is not None:
             cals = ref_food["calories"]
             if prot is None:
@@ -593,21 +629,15 @@ def handle_calorie_log_meal(args: dict[str, Any]) -> ToolResult:
             meal = _d1_request("/api/meals", method="POST", data=payload)
             target_date = meal.get("local_date")
             summary = _d1_request(f"/api/summary?date={target_date}" if target_date else "/api/summary")
+            formatted_summary = _format_summary_dict(summary)
             return _result({
                 "status": "success",
                 "logged_meal": meal,
-                "daily_summary": {
-                    "date": summary["date"],
-                    "target": summary["target"],
-                    "total_consumed": summary["consumed"],
-                    "remaining": summary["remaining"],
-                    "over_target": summary["over_target"],
-                    "consumed_macros": summary["consumed_macros"],
-                },
-                "prompt_target": summary.get("target") is None,
+                "daily_summary": formatted_summary,
+                "prompt_target": formatted_summary["target"] is None,
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_log_meal: %s. Falling back to local storage.", err)
 
     # Offline / local fallback
     conn = storage.get_connection()
@@ -652,13 +682,14 @@ def handle_calorie_get_summary(args: dict[str, Any]) -> ToolResult:
         try:
             path = f"/api/summary?date={date_str}" if date_str else "/api/summary"
             summary = _d1_request(path)
+            formatted = _format_summary_dict(summary)
             return _result({
                 "status": "success",
-                "summary": summary,
-                "prompt_target": summary.get("target") is None,
+                "summary": formatted,
+                "prompt_target": formatted.get("target") is None,
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_get_summary: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -680,8 +711,8 @@ def handle_calorie_get_history(args: dict[str, Any]) -> ToolResult:
         try:
             res = _d1_request(f"/api/history?days={days}")
             return _result({"status": "success", "days": days, "history": res.get("history", [])})
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_get_history: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -718,8 +749,8 @@ def handle_calorie_set_target(args: dict[str, Any]) -> ToolResult:
 
             new_settings = _d1_request("/api/settings", method="PUT", data=payload)
             return _result({"status": "success", "settings": new_settings})
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_set_target: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -750,9 +781,9 @@ def handle_calorie_edit_meal(args: dict[str, Any]) -> ToolResult:
             updated = _d1_request(f"/api/meals/{meal_id}", method="PUT", data=payload)
             target_date = updated.get("local_date")
             summary = _d1_request(f"/api/summary?date={target_date}" if target_date else "/api/summary")
-            return _result({"status": "success", "updated_meal": updated, "daily_summary": summary})
-        except Exception:
-            pass
+            return _result({"status": "success", "updated_meal": updated, "daily_summary": _format_summary_dict(summary)})
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_edit_meal: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -791,9 +822,9 @@ def handle_calorie_delete_meal(args: dict[str, Any]) -> ToolResult:
             target_date = meal.get("local_date")
             _d1_request(f"/api/meals/{meal_id}", method="DELETE")
             summary = _d1_request(f"/api/summary?date={target_date}" if target_date else "/api/summary")
-            return _result({"status": "success", "deleted_id": meal_id, "daily_summary": summary})
-        except Exception:
-            pass
+            return _result({"status": "success", "deleted_id": meal_id, "daily_summary": _format_summary_dict(summary)})
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_delete_meal: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:
@@ -1116,10 +1147,10 @@ def handle_calorie_log_preset(args: dict[str, Any]) -> ToolResult:
                 "status": "success",
                 "message": f"Logged {servings} serving(s) of preset '{preset_ident}' ({meal.get('calories')} kcal).",
                 "meal": meal,
-                "daily_summary": summary,
+                "daily_summary": _format_summary_dict(summary),
             })
-        except Exception:
-            pass
+        except Exception as err:
+            log.warning("Cloudflare D1 request failed in handle_calorie_log_preset: %s. Falling back to local storage.", err)
 
     conn = storage.get_connection()
     try:

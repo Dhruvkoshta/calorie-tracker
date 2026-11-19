@@ -12,76 +12,17 @@
  * - Bidirectional sync endpoint (/api/sync) to import/export with local Hermes agent.
  */
 
-export interface Env {
-  DB?: any;
-  AI?: any;
-}
-
-interface UserSettings {
-  daily_calorie_target: number | null;
-  timezone: string;
-  target_protein_g: number | null;
-  target_carbs_g: number | null;
-  target_fat_g: number | null;
-  target_weight_kg: number | null;
-  fasting_target_hours: number | null;
-  updated_at: string;
-}
-
-interface Meal {
-  id: number;
-  meal_type: string;
-  food_name: string;
-  amount: number;
-  unit: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  calorie_source: string;
-  notes: string;
-  logged_at: string;
-  local_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Preset {
-  id: number;
-  name: string;
-  food_name: string;
-  amount: number;
-  unit: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  calorie_source: string;
-  meal_type: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface WeightLog {
-  id: number;
-  date: string;
-  weight_kg: number;
-  notes: string | null;
-  created_at: string;
-}
-
-interface FastingSession {
-  id: number;
-  start_time: string;
-  target_hours: number;
-  end_time: string | null;
-  is_active: number | boolean;
-  fast_type: string;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type {
+  Env,
+  UserSettings,
+  Meal,
+  Preset,
+  WeightLog,
+  FastingSession,
+  DailySummary,
+} from "./types";
+import { lookupReferenceFood } from "./referenceFoods";
+export type { Env };
 
 // In-memory state fallback when D1 is not bound or initializing
 let inMemSettings: UserSettings = {
@@ -812,16 +753,31 @@ self.addEventListener('fetch', (e) => {
 
       return json({
         local_date: date,
+        date: date,
         daily_target: target,
+        target: target,
         consumed,
         remaining,
         over_budget,
+        over_target: over_budget ? consumed - target : 0,
         meal_count: meals.length,
         consumed_macros,
         target_macros,
         remaining_macros,
         meals,
       });
+    }
+
+    // --- Reference Food Lookup API ---
+    if (url.pathname === "/api/reference-food") {
+      const name = url.searchParams.get("name") || "";
+      const amount = parseFloat(url.searchParams.get("amount") || "1.0");
+      const unit = url.searchParams.get("unit") || "serving";
+      const lookup = lookupReferenceFood(name, isNaN(amount) ? 1.0 : amount, unit);
+      if (lookup) {
+        return json({ found: true, food_name: name, amount, unit, ...lookup });
+      }
+      return json({ found: false, message: `No reference food found for '${name}'` }, 404);
     }
 
     // --- Meals API ---
@@ -833,6 +789,17 @@ self.addEventListener('fetch', (e) => {
       }
       if (request.method === "POST") {
         const body: any = await request.json();
+        // If calories or macros are omitted, attempt reference lookup
+        if (body.calories === undefined || body.calories === null) {
+          const ref = lookupReferenceFood(body.food_name || "", body.amount || 1.0, body.unit || "serving");
+          if (ref) {
+            body.calories = ref.calories;
+            if (body.protein_g === undefined || body.protein_g === null) body.protein_g = ref.protein_g;
+            if (body.carbs_g === undefined || body.carbs_g === null) body.carbs_g = ref.carbs_g;
+            if (body.fat_g === undefined || body.fat_g === null) body.fat_g = ref.fat_g;
+            if (!body.calorie_source) body.calorie_source = "reference";
+          }
+        }
         const meal = await d1AddMeal(env.DB, body);
         return json(meal, 201);
       }
