@@ -1121,7 +1121,7 @@ const INDEX_HTML = `<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
-    \${COMPILED_CSS}
+    ${COMPILED_CSS}
     :root {
       --bg-canvas: #090A0F;
       --bg-card: #12141C;
