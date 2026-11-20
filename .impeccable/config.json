@@ -1,9 +1,0 @@
-{
-  "buildPath": "code",
-  "detector": {
-    "ignoreFiles": [
-      "cloudflare_worker/dist.css",
-      "cloudflare_worker/src/styles.ts"
-    ]
-  }
-}
