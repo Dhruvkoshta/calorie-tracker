@@ -36,6 +36,13 @@
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
       "computedHash": "d40f025dc1b0f2020663260f38f2bcb8d6ed3523afb11e5fda624b01238677e8"
     },
+    "cook": {
+      "source": "Leonxlnx/cook",
+      "commit": "b23cac6fd9439dfddcab61b14808e7bf72549b46",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "3dcf9cf36e34e6cd71137d8480fba18ea015339608d3e2065cdc712c6a362d1a"
+    },
     "diagnosing-bugs": {
       "source": "mattpocock/skills",
       "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
